@@ -12,12 +12,14 @@ name = HGT_M
         interp_option =      2m:four_pt
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
-        interp_option = default:four_pt
+        interp_option = default:average_gcell(4.0)+four_pt+average_4pt
+        abs_path=     .3s:./ned_data/10m
+        abs_path=      1s:./ned_data/30m
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name = HGT_U
         output_stagger = U
@@ -27,14 +29,16 @@ name = HGT_U
         interp_option =      2m:four_pt
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
-        interp_option = default:four_pt
+        interp_option = default:average_gcell(4.0)+four_pt+average_4pt
         smooth_option = smth-desmth_special; smooth_passes=1
         fill_missing=0.
+        abs_path=     .3s:./ned_data/10m
+        abs_path=      1s:./ned_data/30m
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name = HGT_V
         output_stagger = V
@@ -44,14 +48,16 @@ name = HGT_V
         interp_option =      2m:four_pt
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
-        interp_option = default:four_pt
+        interp_option = default:average_gcell(4.0)+four_pt+average_4pt
         smooth_option = smth-desmth_special; smooth_passes=1
         fill_missing=0.
+        abs_path=     .3s:./ned_data/10m
+        abs_path=      1s:./ned_data/30m
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name=LANDUSEF
         priority=1
@@ -71,7 +77,7 @@ name=LANDUSEF
         rel_path=      2m:landuse_2m/
         rel_path=      5m:landuse_5m/
         rel_path=     10m:landuse_10m/
-        rel_path= default:landuse_2m/
+        rel_path= default:landuse_30s/
 ===============================
 name=SOILTEMP
         priority=1
@@ -95,7 +101,7 @@ name=SOILCTOP
         rel_path=      2m:soiltype_top_2m/
         rel_path=      5m:soiltype_top_5m/
         rel_path=     10m:soiltype_top_10m/
-        rel_path= default:soiltype_top_2m/
+        rel_path= default:soiltype_top_30s/
 ===============================
 name=SOILCBOT
         priority=1
@@ -111,7 +117,7 @@ name=SOILCBOT
         rel_path=      2m:soiltype_bot_2m/
         rel_path=      5m:soiltype_bot_5m/
         rel_path=     10m:soiltype_bot_10m/
-        rel_path= default:soiltype_bot_2m/
+        rel_path= default:soiltype_bot_30s/
 ===============================
 name=ALBEDO12M
         priority=1
@@ -345,8 +351,9 @@ name=ZSF
         df_dx=DZDXF
         df_dy=DZDYF
         smooth_option = smth-desmth_special; smooth_passes=1
-	halt_on_missing=yes
+	halt_on_missing=no
         interp_option = default:average_gcell(4.0)+four_pt+average_4pt
-	abs_path=./ned_data
+	abs_path=.3s:./ned_data/10m
+        abs_path=default:./ned_data/30m
 	subgrid=yes
 ==============================
