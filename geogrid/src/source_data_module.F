@@ -53,7 +53,7 @@ module source_data_module
    type (list), pointer, dimension(:) :: source_res_path, source_interp_option, source_landmask_land, &
                                          source_landmask_water
    type (hashtable) :: bad_files   ! Track which files produce errors when we try to open them
-   type (hashtable) :: duplicate_fnames  ! Remember which output fields we have returned
+   type (hashtable) :: duplicate_fnames  ! Remember which output fields we have returned 
 
  
    contains
@@ -768,7 +768,7 @@ module source_data_module
                call mprintf(.true., ERROR, 'Could not find interpolator sequence for requested resolution for %s.'// &
                             ' The sources specified in namelist.wps is not listed in GEOGRID.TBL.', &
                             s1=trim(source_fieldname(idx)))
-            end if
+               end if
          else
             call mprintf(.true., INFORM, 'Using %s interpolator sequence for %s.', &
                          s1=temp_interp, s2=trim(source_fieldname(idx)))
@@ -822,7 +822,7 @@ module source_data_module
       30 buffer = ' '
          read(funit,'(a)',end=40, err=1001) buffer
          call despace(buffer)
-         
+     
          ! Is this line a comment?
          if (buffer(1:1) == '#') then
             ! Do nothing.
@@ -1041,7 +1041,7 @@ module source_data_module
                   else if (index('scale_factor',trim(buffer(1:i-1))) /= 0) then
                      is_scale_factor(idx) = .true.
                      read(buffer(i+1:eos-1),*) source_scale_factor(idx)
-
+          
                   else if (index('geotiff',trim(buffer(1:i-1))) /= 0) then
                      is_geotiff(idx) = .true.
                      read(buffer(i+1:eos-1),*) source_geotiff_file(idx)
@@ -1058,11 +1058,12 @@ module source_data_module
             end do   ! while eos /= 0 }
      
          end if   !} index(buffer, '=====') /= 0
-
+     
          go to 30
-
-     40 continue
     
+    40 close(funit)
+ 
+
 #ifdef _HAS_GEOTIFF
          if(is_geotiff(idx)) then
            if(source_geotiff_file(idx)(1:1) .ne. '/')then
@@ -1148,9 +1149,7 @@ module source_data_module
          endif
 #endif
 
-        close(funit)
-
-      end do
+        end do
 
       return
   
@@ -1274,6 +1273,7 @@ module source_data_module
          deallocate(is_descr)
          deallocate(is_missing_value)
          deallocate(is_fill_missing)
+         deallocate(is_subgrid)
       end if
   
       call hash_destroy(bad_files)
@@ -1332,7 +1332,7 @@ module source_data_module
    recursive subroutine get_next_output_fieldname(nest_num, field_name, ndims, &
                                             min_cat, max_cat, &
                                             istagger, memorder, dimnames, units, &
-                                            description, subgrid_var, istatus)
+                                            description, sr_x, sr_y, istatus)
 
       use gridinfo_module
  
@@ -1343,7 +1343,7 @@ module source_data_module
       ! Arguments
       integer, intent(in) :: nest_num
       integer, intent(out) :: istatus, ndims, istagger, min_cat, max_cat
-      logical, intent(out) :: subgrid_var
+      integer, intent(out) :: sr_x, sr_y
       character (len=128), intent(out) :: memorder, field_name, units, description
       character (len=128), dimension(3), intent(out) :: dimnames
   
@@ -1370,7 +1370,7 @@ module source_data_module
                call get_next_output_fieldname(nest_num, field_name, ndims, &
                                               min_cat, max_cat, istagger, &
                                               memorder, dimnames, units, description, &
-                                              subgrid_var, istatus)
+                                              sr_x, sr_y, istatus)
                return
             else
                ndims = 2
@@ -1413,10 +1413,7 @@ module source_data_module
                   memorder = '   ' 
                   dimnames(3) = ' '
                end if
-               subgrid_var=is_subgrid_var(field_name)
-               if ( subgrid_var ) then
-                  call get_subgrid_dim_name(dimnames(1:2))
-               end if
+               call get_subgrid_dim_name(nest_num, field_name, dimnames(1:2), sr_x, sr_y, istatus)
                call get_source_units(field_name, 1, units, istatus)
                if (istatus /= 0) units = '-'
                call get_source_descr(field_name, 1, description, istatus)
@@ -1429,7 +1426,7 @@ module source_data_module
             call get_next_output_fieldname(nest_num, field_name, ndims, &
                                            min_cat, max_cat, istagger, &
                                            memorder, dimnames, units, description, &
-                                           subgrid_var, istatus)
+                                           sr_x, sr_y, istatus)
             return
          end if
   
@@ -1446,7 +1443,7 @@ module source_data_module
                call get_next_output_fieldname(nest_num, field_name, ndims, &
                                               min_cat, max_cat, istagger, &
                                               memorder, dimnames, units, description, &
-                                              subgrid_var, istatus)
+                                              sr_x, sr_y, istatus)
                return
      
             ! Return the fractional field
@@ -1491,12 +1488,7 @@ module source_data_module
                   memorder = '   ' 
                   dimnames(3) = ' '
                end if
-
-               subgrid_var=is_subgrid_var(field_name)
-               if ( subgrid_var ) then
-                  call get_subgrid_dim_name(dimnames(1:2))
-               end if
-
+               call get_subgrid_dim_name(nest_num, field_name, dimnames(1:2), sr_x, sr_y, istatus)
                call get_source_units(field_name, 1, units, istatus)
                if (istatus /= 0) units = '-'
                call get_source_descr(field_name, 1, description, istatus)
@@ -1512,7 +1504,7 @@ module source_data_module
             call get_next_output_fieldname(nest_num, field_name, ndims, &
                                            min_cat, max_cat, istagger, &
                                            memorder, dimnames, units, description, &
-                                           subgrid_var, istatus)
+                                           sr_x, sr_y, istatus)
             return
          end if
   
@@ -1550,11 +1542,7 @@ module source_data_module
                dimnames(3) = ' ' 
                memorder = 'XY ' 
 
-               subgrid_var=is_subgrid_var(field_name)
-               if ( subgrid_var ) then
-                  call get_subgrid_dim_name(dimnames(1:2))
-               end if
-
+               call get_subgrid_dim_name(nest_num, field_name, dimnames(1:2), sr_x, sr_y, istatus)
                field_name = domcat_name
                units = 'category'
                description = 'Dominant category'
@@ -1572,7 +1560,7 @@ module source_data_module
                call get_next_output_fieldname(nest_num, field_name, ndims, &
                                               min_cat, max_cat, istagger, &
                                               memorder, dimnames, units, description, &
-                                              subgrid_var, istatus)
+                                              sr_x, sr_y, istatus)
               return
             end if 
          else
@@ -1631,14 +1619,10 @@ module source_data_module
                   memorder = '   ' 
                   dimnames(3) = ' '
                end if
+               field_name = dfdx_name
                units = '-'
 
-               subgrid_var=is_subgrid_var(field_name)
-               if ( subgrid_var ) then
-                  call get_subgrid_dim_name(dimnames(1:2))
-               end if
-
-               field_name = dfdx_name
+               call get_subgrid_dim_name(nest_num, field_name, dimnames(1:2), sr_x, sr_y, istatus)
                description = 'df/dx'
                if (output_field_state == RETURN_DFDX) then
                   output_field_state = RETURN_DFDY
@@ -1654,7 +1638,7 @@ module source_data_module
                call get_next_output_fieldname(nest_num, field_name, ndims, &
                                               min_cat, max_cat, istagger, &
                                               memorder, dimnames, units, description, &
-                                              subgrid_var, istatus)
+                                              sr_x, sr_y, istatus)
                return
             end if 
          else
@@ -1714,11 +1698,7 @@ module source_data_module
                   dimnames(3) = ' '
                end if
                
-               subgrid_var=is_subgrid_var(field_name)
-               if ( subgrid_var ) then
-                  call get_subgrid_dim_name(dimnames(1:2))
-               end if
-
+               call get_subgrid_dim_name(nest_num, field_name, dimnames(1:2), sr_x, sr_y, istatus)
                field_name = dfdy_name
                units = '-'
                description = 'df/dy'
@@ -1728,7 +1708,7 @@ module source_data_module
                call get_next_output_fieldname(nest_num, field_name, ndims, &
                                               min_cat, max_cat, istagger, &
                                               memorder, dimnames, units, description, &
-                                              subgrid_var, istatus)
+                                              sr_x, sr_y, istatus)
                return
             end if 
          else
@@ -2534,49 +2514,41 @@ module source_data_module
    !
    ! Pupose:
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   logical function is_subgrid_var(field_name)
+   subroutine get_subgrid_dim_name(nest_num, field_name, dimnames, &
+                                   sub_x, sub_y, istatus)
 
       use gridinfo_module
 
       implicit none
+      integer, intent(in) :: nest_num
+      integer, intent(out) :: sub_x, sub_y, istatus
       character(len=128), intent(in) :: field_name
+      character(len=128), dimension(2), intent(inout) :: dimnames
       integer :: idx, nlen
 
-      is_subgrid_var=.false.
+      sub_x = 1
+      sub_y = 1
 
-      if (((index(trim(field_name),'FXLAT') /= 0) .and.       &
-            (len_trim(field_name) == len_trim('FXLAT'))) .or. &
-          ((index(trim(field_name),'FXLONG') /= 0) .and.      &
-            (len_trim(field_name) == len_trim('FXLONG'))))then
-         is_subgrid_var=.true.
-      else
-
-         do idx=1,num_entries
-            if ((index(source_fieldname(idx),trim(field_name)) /= 0) .and. &
-               (len_trim(source_fieldname(idx)) == len_trim(field_name))) then
-               if (is_subgrid(idx)) is_subgrid_var=.true.
-               goto 110
+      istatus = 0
+      do idx=1,num_entries
+         if ((index(source_fieldname(idx),trim(field_name)) /= 0) .and. &
+            (len_trim(source_fieldname(idx)) == len_trim(field_name))) then
+            if (is_subgrid(idx)) then
+               istatus = 0
+               if (is_output_stagger(idx)) then
+                  call mprintf(.true.,ERROR,'Cannot use subgrids on variables with staggered grids')
+               end if
+               dimnames(1) = trim(dimnames(1))//"_subgrid"
+               dimnames(2) = trim(dimnames(2))//"_subgrid"
+               sub_x = subgrid_ratio_x(nest_num)
+               sub_y = subgrid_ratio_y(nest_num)
             end if
-         end do
-
-      end if
-
-   110 continue
-
-   end function is_subgrid_var
-
-
-   subroutine get_subgrid_dim_name(dimnames)
-   implicit none
-
-   character(len=128),dimension(2),intent(out)::dimnames
-
-   dimnames(1)='west_east_subgrid'
-   dimnames(2)='south_north_subgrid'
+         end if
+      end do
 
    end subroutine get_subgrid_dim_name
-
-
+ 
+ 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Name: get_interp_option
    !
@@ -2858,8 +2830,8 @@ module source_data_module
                                   "compiled with geotiff support.",s1=trim(field_name))
 #endif
       else
-        call read_geogrid(file_name, strlen, array, xdim, ydim, zdim, &
-                          sign_convention, local_endian, scalefac, local_wordsize, istatus)
+      call read_geogrid(file_name, strlen, array, xdim, ydim, zdim, &
+                        sign_convention, local_endian, scalefac, local_wordsize, istatus)
       endif
 
       if (irow_order == TOP_BOTTOM) then
@@ -2917,7 +2889,7 @@ module source_data_module
       end do
 
    end subroutine get_row_order
- 
+  
    logical function is_geotiff_file(fieldname,ilevel)
    implicit none
    character(len=*),intent(in)::fieldname
@@ -3090,15 +3062,11 @@ module source_data_module
       rx = real(source_tile_x(idx)) * real(floor((rx-0.5) / real(source_tile_x(idx)))) + 1.0
       ry = real(source_tile_y(idx)) * real(floor((ry-0.5) / real(source_tile_y(idx)))) + 1.0
 
-      if (rx > 0. .and. ry > 0. .and. &
-          nint(rx)+source_tile_x(idx)-1 < 100000 .and. &
-          nint(ry)+source_tile_y(idx)-1 < 100000) then
-         write(test_fname, '(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(source_path(idx)), &
-                  nint(rx),'-',nint(rx)+source_tile_x(idx)-1,'.',nint(ry),'-',nint(ry)+source_tile_y(idx)-1
-      else
-         write(test_fname,'(a,i10,a1,i10,a1,i10,a1,i10)') trim(source_path(idx)), & 
-                  nint(rx),'-',nint(rx)+source_tile_x(idx)-1,'.',nint(ry),'-',nint(ry)+source_tile_y(idx)-1
-      endif
+      if (rx > 0. .and. ry > 0.) then
+               write(test_fname, '(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(source_path(idx)), &
+                        nint(rx),'-',nint(rx)+source_tile_x(idx)-1,'.',nint(ry),'-',nint(ry)+source_tile_y(idx)-1
+      end if
+
    end subroutine get_tile_fname
  
  
@@ -3250,7 +3218,7 @@ module source_data_module
       end do
  
    end subroutine get_data_projection
- 
+
    subroutine get_geotiff_filename(field_name,ilevel,file_name,istatus)
    implicit none
    character(len=*),intent(in)::field_name
@@ -3267,7 +3235,7 @@ module source_data_module
                   file_name=trim(source_geotiff_file(idx))
                   istatus = 0
                   exit
-               end if 
+               end if
             end if
          end if
    end do
@@ -3411,46 +3379,43 @@ module source_data_module
             end if
          end if
       end do
-
-! category min/max is not set in GEOGRID.TBL, where this subroutine is called... this causes 
-! periodic crashes due to if's on unset memory
-!  
-!      ! If either min_category or max_category is specified, then both must be specified
-!      do i=1,num_entries
-!         if (is_category_min(i) .or. is_category_max(i)) then
-!            if (.not. is_category_min(i)) then
-!               call mprintf(.true., ERROR, 'In GEOGRID.TBL, for index file of data at '// &
-!                            'entry %i, category_max is specified, but category_min is '// &
-!                            'not. Both must be specified.',i1=i)
-!            else if (.not. is_category_max(i)) then
-!               call mprintf(.true., ERROR, 'In GEOGRID.TBL, for index file of data at '// &
-!                            'entry %i, category_min is specified, but category_max is '// &
-!                            'not. Both must be specified.',i1=i)
-!            end if
-!         end if
-!      end do
-!  
-!      ! For continuous data, (category_max - category_min + 1) should equal tile_z
-!      do i=1,num_entries
-!         if (is_fieldtype(i)) then
-!            if (source_fieldtype(i) == CONTINUOUS) then
-!               if (is_category_max(i) .and. is_category_min(i) .and. is_tile_z(i)) then
-!                  if (source_tile_z(i) /= (source_category_max(i) - source_category_min(i) + 1)) then
-!                     call mprintf(.true., ERROR, 'In GEOGRID.TBL, tile_z must equal '// &
-!                                  '(category_max - category_min + 1) at entry %i.',i1=i)
-!                  end if
-!               else if (is_category_max(i) .and. is_category_min(i) .and. &
-!                        is_tile_z_start(i) .and. is_tile_z_end(i)) then
-!                  if (source_tile_z_end(i) /= source_category_max(i) .or. &
-!                      source_tile_z_start(i) /= source_category_min(i)) then
-!                     call mprintf(.true., ERROR, 'In GEOGRID.TBL, tile_z_end must equal '// &
-!                                  'category_max, and tile_z_start must equal category_min '// &
-!                                  'at entry %i.',i1=i)
-!                  end if
-!               end if
-!            end if
-!         end if
-!      end do
+  
+      ! If either min_category or max_category is specified, then both must be specified
+      do i=1,num_entries
+         if (is_category_min(i) .or. is_category_max(i)) then
+            if (.not. is_category_min(i)) then
+               call mprintf(.true., ERROR, 'In GEOGRID.TBL, for index file of data at '// &
+                            'entry %i, category_max is specified, but category_min is '// &
+                            'not. Both must be specified.',i1=i)
+            else if (.not. is_category_max(i)) then
+               call mprintf(.true., ERROR, 'In GEOGRID.TBL, for index file of data at '// &
+                            'entry %i, category_min is specified, but category_max is '// &
+                            'not. Both must be specified.',i1=i)
+            end if
+         end if
+      end do
+  
+      ! For continuous data, (category_max - category_min + 1) should equal tile_z
+      do i=1,num_entries
+         if (is_fieldtype(i)) then
+            if (source_fieldtype(i) == CONTINUOUS) then
+               if (is_category_max(i) .and. is_category_min(i) .and. is_tile_z(i)) then
+                  if (source_tile_z(i) /= (source_category_max(i) - source_category_min(i) + 1)) then
+                     call mprintf(.true., ERROR, 'In GEOGRID.TBL, tile_z must equal '// &
+                                  '(category_max - category_min + 1) at entry %i.',i1=i)
+                  end if
+               else if (is_category_max(i) .and. is_category_min(i) .and. &
+                        is_tile_z_start(i) .and. is_tile_z_end(i)) then
+                  if (source_tile_z_end(i) /= source_category_max(i) .or. &
+                      source_tile_z_start(i) /= source_category_min(i)) then
+                     call mprintf(.true., ERROR, 'In GEOGRID.TBL, tile_z_end must equal '// &
+                                  'category_max, and tile_z_start must equal category_min '// &
+                                  'at entry %i.',i1=i)
+                  end if
+               end if
+            end if
+         end if
+      end do
   
       ! Make sure that user has not named a dominant category or computed slope field 
       !    the same as a fractional field
@@ -3618,5 +3583,5 @@ module source_data_module
       enddo
  
    end subroutine s_len
- 
+
 end module source_data_module

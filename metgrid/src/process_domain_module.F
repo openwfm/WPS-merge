@@ -44,6 +44,15 @@ module process_domain_module
       character (len=128) :: title, mminlu
       character (len=128), allocatable, dimension(:) :: output_flags, td_output_flags
 
+      ! CWH Initialize local pointer variables
+      nullify(landmask)
+      nullify(xlat)
+      nullify(xlon)
+      nullify(xlat_u)
+      nullify(xlon_u)
+      nullify(xlat_v)
+      nullify(xlon_v)
+
       ! Compute number of times that we will process
       call geth_idts(end_date(n), start_date(n), idiff)
       call mprintf((idiff < 0),ERROR,'Ending date is earlier than starting date in namelist for domain %i.', i1=n)
@@ -223,7 +232,7 @@ module process_domain_module
     
       ! Local variables
       integer :: istatus, i, j, k, sp1, ep1, sp2, ep2, sp3, ep3, &
-                 lh_mult, rh_mult, bh_mult, th_mult
+                 lh_mult, rh_mult, bh_mult, th_mult, subx, suby
       integer :: we_mem_subgrid_s, we_mem_subgrid_e, &
                  sn_mem_subgrid_s, sn_mem_subgrid_e
       integer :: we_patch_subgrid_s, we_patch_subgrid_e, &
@@ -233,7 +242,9 @@ module process_domain_module
       character (len=128) :: grid_type, datestr, cname, stagger, cunits, cdesc
       character (len=128), dimension(3) :: dimnames
       type (fg_input) :: field
-      logical :: is_subgrid
+
+      ! CWH Initialize local pointer variables
+      nullify(real_array)
 
       ! Initialize the input module to read static input data for this domain
       call mprintf(.true.,LOGFILE,'Opening static input file.')
@@ -345,7 +356,7 @@ module process_domain_module
       istatus = 0
       do while (istatus == 0)  
         call read_next_field(sp1, ep1, sp2, ep2, sp3, ep3, cname, cunits, cdesc, &
-                             memorder, stagger, dimnames, is_subgrid, &
+                             memorder, stagger, dimnames, subx, suby, &
                              real_array, istatus)
         if (istatus == 0) then
 
@@ -412,22 +423,25 @@ module process_domain_module
 
           end if
 
-          we_mem_subgrid_s   = (we_mem_s                 + HALO_WIDTH*lh_mult - 1)*sub_x - HALO_WIDTH*lh_mult + 1
-          we_mem_subgrid_e   = (we_mem_e   + (1-rh_mult) - HALO_WIDTH*rh_mult    )*sub_x + HALO_WIDTH*rh_mult
-          we_patch_subgrid_s = (we_patch_s                                    - 1)*sub_x                      + 1
-          we_patch_subgrid_e = (we_patch_e + (1-rh_mult)                         )*sub_x
-          sn_mem_subgrid_s   = (sn_mem_s                 + HALO_WIDTH*bh_mult - 1)*sub_y - HALO_WIDTH*bh_mult + 1
-          sn_mem_subgrid_e   = (sn_mem_e   + (1-th_mult) - HALO_WIDTH*th_mult    )*sub_y + HALO_WIDTH*th_mult
-          sn_patch_subgrid_s = (sn_patch_s                                    - 1)*sub_y                      + 1
-          sn_patch_subgrid_e = (sn_patch_e + (1-th_mult)                         )*sub_y
+          if (subx > 1) then
+             we_mem_subgrid_s   = (we_mem_s                 + HALO_WIDTH*lh_mult - 1)*subx - HALO_WIDTH*lh_mult + 1
+             we_mem_subgrid_e   = (we_mem_e   + (1-rh_mult) - HALO_WIDTH*rh_mult    )*subx + HALO_WIDTH*rh_mult
+             we_patch_subgrid_s = (we_patch_s                                    - 1)*subx                      + 1
+             we_patch_subgrid_e = (we_patch_e + (1-rh_mult)                         )*subx
+          end if
+          if (suby > 1) then
+             sn_mem_subgrid_s   = (sn_mem_s                 + HALO_WIDTH*bh_mult - 1)*suby - HALO_WIDTH*bh_mult + 1
+             sn_mem_subgrid_e   = (sn_mem_e   + (1-th_mult) - HALO_WIDTH*th_mult    )*suby + HALO_WIDTH*th_mult
+             sn_patch_subgrid_s = (sn_patch_s                                    - 1)*suby                      + 1
+             sn_patch_subgrid_e = (sn_patch_e + (1-th_mult)                         )*suby
+          end if
     
           ! Having read in a field, we write each level individually to the
           !   storage module; levels will be reassembled later on when they
           !   are written.
           do k=sp3,ep3
-             field%header%sr_x=sub_x
-             field%header%sr_y=sub_y
-             field%header%is_subgrid=is_subgrid
+             field%header%sr_x=subx
+             field%header%sr_y=suby
              field%header%version = 1
              field%header%date = start_date(n) 
              field%header%time_dependent = .false.
@@ -443,7 +457,7 @@ module process_domain_module
              field%header%is_wind_grid_rel = .true.
              field%header%array_has_missing_values = .false.
              if (gridtype == 'C') then
-                if (is_subgrid) then
+                if (subx > 1 .or. suby > 1) then
                    field%map%stagger = M
                    field%header%dim1(1) = we_mem_subgrid_s
                    field%header%dim1(2) = we_mem_subgrid_e
@@ -482,7 +496,7 @@ module process_domain_module
 
              allocate(field%valid_mask)
 
-             if (is_subgrid) then
+             if (subx > 1 .or. suby > 1) then
                 allocate(field%r_arr(we_mem_subgrid_s:we_mem_subgrid_e,&
                                      sn_mem_subgrid_s:sn_mem_subgrid_e))
                 field%r_arr(we_patch_subgrid_s:we_patch_subgrid_e,sn_patch_subgrid_s:sn_patch_subgrid_e) = &
@@ -650,6 +664,13 @@ integer, parameter :: BDR_WIDTH = 3
       type (fg_input) :: field, u_field, v_field
       type (met_data) :: fg_data
 
+      ! CWH Initialize local pointer variables
+      nullify(soil_levels)
+      nullify(u_levels)
+      nullify(v_levels)
+      nullify(halo_slab)
+      nullify(real_array)
+
 
       ! For this time, we need to process all first-guess filename roots. When we 
       !   hit a root containing a '*', we assume we have hit the end of the list
@@ -772,9 +793,8 @@ integer, parameter :: BDR_WIDTH = 3
                   field%header%description(1:46) = fg_data%desc
                   call get_z_dim_name(fg_data%field,field%header%vertical_coord)
                   field%header%vertical_level = nint(fg_data%xlvl) 
-                  field%header%sr_x = sub_x
-                  field%header%sr_y = sub_y
-                  field%header%is_subgrid = .false.
+                  field%header%sr_x = 1
+                  field%header%sr_y = 1
                   field%header%array_order = 'XY ' 
                   field%header%is_wind_grid_rel = fg_data%is_wind_grid_rel 
                   field%header%array_has_missing_values = .false.
@@ -1129,7 +1149,7 @@ integer, parameter :: BDR_WIDTH = 3
       !   now we simply output every field from the storage module.
       !
     
-      title = 'OUTPUT FROM METGRID V3.3' 
+      title = 'OUTPUT FROM METGRID V3.4' 
    
       ! Initialize the output module for this domain and time
       call mprintf(.true.,LOGFILE,'Initializing output module.')
@@ -1330,7 +1350,6 @@ integer, parameter :: BDR_WIDTH = 3
                   mask_field%header%vertical_level = 1
                   mask_field%header%sr_x = 1
                   mask_field%header%sr_y = 1
-                  mask_field%header%is_subgrid = .false.
                   mask_field%header%array_order = 'XY'
                   mask_field%header%dim1(1) = 1
                   mask_field%header%dim1(2) = fg_data%nx
@@ -1423,6 +1442,10 @@ integer, parameter :: BDR_WIDTH = 3
       real :: rx, ry, temp
       real, pointer, dimension(:,:) :: data_count
       type (fg_input) :: mask_field, mask_water_field, mask_land_field
+
+      ! CWH Initialize local pointer variables
+      nullify(interp_array)
+      nullify(data_count)
 
       ! Find index into fieldname, interp_method, masked, and fill_missing
       !   of the current field
@@ -1828,6 +1851,10 @@ integer, parameter :: BDR_WIDTH = 3
       type (fg_input), pointer, dimension(:) :: headers
       type (list) :: temp_levels
    
+      !CWH Initialize local pointer variables
+      nullify(field_levels)
+      nullify(headers)
+
       ! Initialize a list to store levels that are found for 3-d fields 
       call list_init(temp_levels)
    
@@ -1900,6 +1927,14 @@ integer, parameter :: BDR_WIDTH = 3
       type (list) :: temp_levels
       type (list_item), pointer, dimension(:) :: keys
    
+      ! CWH Initialize local pointer variables
+      nullify(union_levels)
+      nullify(field_levels)
+      nullify(r_union_levels)
+      nullify(headers)
+      nullify(all_headers)
+      nullify(keys)
+
       ! Initialize a list to store levels that are found for 3-d fields 
       call list_init(temp_levels)
    
@@ -2098,7 +2133,6 @@ integer, parameter :: BDR_WIDTH = 3
       field%header%vertical_level = 0
       field%header%sr_x = 1
       field%header%sr_y = 1
-      field%header%is_subgrid = .false.
       field%header%array_order = 'XY ' 
       field%header%is_wind_grid_rel = .true.
       field%header%array_has_missing_values = .false.
@@ -2181,6 +2215,10 @@ integer, parameter :: BDR_WIDTH = 3
       type (list_item), pointer, dimension(:) :: keys
       character (len=128) :: asrcname
       logical :: filled_all_lev
+
+      !CWH Initialize local pointer variables
+      nullify(all_list)
+      nullify(keys)
 
       filled_all_lev = .false.
 

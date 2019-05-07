@@ -79,6 +79,9 @@ module storage_module
       type (data_node), pointer :: newnode
       type (data_node), pointer :: evictnode
 
+      !CWH Initialize local pointer variables
+      nullify(evictnode)       !MGD initialization for evictnode should not be necessary
+
       ! We'll first see if there is already a list for this fieldname
       name_cursor => head
       do while (associated(name_cursor))
@@ -211,6 +214,9 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
       type (data_node), pointer :: data_cursor
       type (data_node), pointer :: evictnode
 
+      !CWH Initialize local pointer variables
+      nullify(evictnode)     !MGD initialization for evictnodeshould not be necessary
+
       global_time = global_time + 1
 
       istatus = 1
@@ -339,7 +345,7 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
    subroutine get_next_output_fieldname(nest_num, field_name, ndims, &
                                         min_level, max_level, &
                                         istagger, mem_order, dim_names, units, description, &
-                                        subgrid_var, &
+                                        sr_x, sr_y, &
                                         istatus)
 
       implicit none
@@ -347,7 +353,7 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
       ! Arguments
       integer, intent(in) :: nest_num
       integer, intent(out) :: ndims, min_level, max_level, istagger, istatus
-      logical, intent(out) :: subgrid_var
+      integer, intent(out) :: sr_x, sr_y
       character (len=128), intent(out) :: field_name, mem_order, units, description
       character (len=128), dimension(3), intent(out) :: dim_names
 
@@ -412,9 +418,9 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
             dim_names(2) = 'j-dimension'
          end if
          units = get_units(next_output_field%fg_data)
-         description = get_description(next_output_field%fg_data)
-         subgrid_var=is_subgrid_var(field_name)
-         if (subgrid_var) call get_subgrid_dim_name(dim_names(1:2))
+         description = get_description(next_output_field%fg_data) 
+         call get_subgrid_dim_name(nest_num, field_name, dim_names(1:2), &
+                                   sr_x, sr_y, istatus)
 
          next_output_field => next_output_field%next
       end if
@@ -427,28 +433,36 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
    !
    ! Purpose: 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   logical function is_subgrid_var(field_name)
+   subroutine get_subgrid_dim_name(nest_num, field_name, dimnames, &
+                                   sub_x, sub_y, istatus)
 
       use gridinfo_module
 
       implicit none
 
       ! Arguments
+      integer, intent(in) :: nest_num
+      integer, intent(out) :: sub_x, sub_y, istatus
       character(len=128), intent(in) :: field_name
+      character(len=128), dimension(2), intent(inout) :: dimnames
 
-      is_subgrid_var=next_output_field%fg_data%header%is_subgrid
+      ! Local variables
+      integer :: idx, nlen
 
-   end function is_subgrid_var
+      sub_x = next_output_field%fg_data%header%sr_x
+      sub_y = next_output_field%fg_data%header%sr_y
 
-   subroutine get_subgrid_dim_name(dimnames)
-   implicit none
+      if (sub_x > 1) then
+        dimnames(1) = trim(dimnames(1))//"_subgrid"
+      end if
+      if (sub_y > 1) then
+        dimnames(2) = trim(dimnames(2))//"_subgrid"
+      end if
 
-   character(len=128),dimension(2),intent(out)::dimnames
-
-   dimnames(1)='west_east_subgrid'
-   dimnames(2)='south_north_subgrid'
+      istatus = 0
 
    end subroutine get_subgrid_dim_name
+
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Name: get_next_output_field
@@ -934,6 +948,10 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
       type (fg_input), pointer, dimension(:) :: header_list
 
       type (list) :: all_levs
+
+      !CWH Initialize local pointer variables
+      nullify(ilevels)
+      nullify(header_list)     !MGD initialization for header_list should not be necessary
 
       call list_init(all_levs)
       call storage_get_td_headers(header_list)
