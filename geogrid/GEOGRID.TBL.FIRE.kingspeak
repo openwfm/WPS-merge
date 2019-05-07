@@ -193,11 +193,12 @@ name = HGT_M
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
         interp_option = default:four_pt
+        interp_option =     .3s:four_pt
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name = HGT_U
         output_stagger = U
@@ -208,13 +209,14 @@ name = HGT_U
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
         interp_option = default:four_pt
+        interp_option =     .3s:four_pt
         smooth_option = smth-desmth_special; smooth_passes=1
         fill_missing=0.
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name = HGT_V
         output_stagger = V
@@ -225,13 +227,14 @@ name = HGT_V
         interp_option =      5m:four_pt
         interp_option =     10m:four_pt
         interp_option = default:four_pt
+        interp_option =     .3s:four_pt
         smooth_option = smth-desmth_special; smooth_passes=1
         fill_missing=0.
         rel_path=     30s:topo_30s/
         rel_path=      2m:topo_2m/
         rel_path=      5m:topo_5m/
         rel_path=     10m:topo_10m/
-        rel_path= default:topo_2m/
+        rel_path= default:topo_30s/
 ===============================
 name=LANDUSEF
         priority=1
@@ -249,7 +252,7 @@ name=LANDUSEF
         interp_option =          2m:four_pt
         interp_option =          5m:four_pt
         interp_option =         10m:four_pt
-        interp_option =      default:four_pt
+        interp_option =     default:four_pt
         rel_path=   modis_30s:modis_landuse_20class_30s/
         rel_path=         30s:landuse_30s/
         rel_path=  usgs_lakes:landuse_30s_with_lakes/
@@ -338,13 +341,14 @@ name=SLOPECAT
 ===============================
 name=NFUEL_CAT
         priority=1
-	dest_type=categorical
-	dominant_only=NFUEL_CAT
-	z_dim_name=fuel_cat
-	fill_missing = 0.
-	interp_option=default:nearest_neighbor+average_16pt+search
-	abs_path=./landfire_data
-	subgrid=yes
+        dest_type=categorical
+        dominant_only=NFUEL_CAT
+        z_dim_name=fuel_cat
+        halt_on_missing = no
+        fill_missing = 14
+        interp_option=default:nearest_neighbor+average_16pt+search
+        rel_path=default:adam_fuel_cat
+        subgrid=yes
 ==============================
 name=ZSF
         priority = 1
@@ -352,8 +356,9 @@ name=ZSF
         df_dx=DZDXF
         df_dy=DZDYF
         smooth_option = smth-desmth_special; smooth_passes=1
-	halt_on_missing=yes
+        halt_on_missing = no
+        fill_missing = 0
         interp_option = default:average_gcell(4.0)+four_pt+average_4pt
-	abs_path=./ned_data
-	subgrid=yes
+        rel_path=default:adam_topo
+        subgrid=yes
 ==============================

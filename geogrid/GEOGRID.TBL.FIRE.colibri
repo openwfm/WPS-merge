@@ -343,7 +343,7 @@ name=NFUEL_CAT
 	z_dim_name=fuel_cat
 	fill_missing = 0.
 	interp_option=default:nearest_neighbor+average_16pt+search
-	abs_path=./landfire_data
+	abs_path=/share_home/akochans/geog/adam_fuel_cat
 	subgrid=yes
 ==============================
 name=ZSF
@@ -354,6 +354,6 @@ name=ZSF
         smooth_option = smth-desmth_special; smooth_passes=1
 	halt_on_missing=yes
         interp_option = default:average_gcell(4.0)+four_pt+average_4pt
-	abs_path=./ned_data
+	abs_path=/share_home/akochans/geog/adam_topo
 	subgrid=yes
 ==============================
