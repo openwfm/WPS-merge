@@ -667,7 +667,9 @@ logical,dimension(xs:xe,ys:ye,zs:ze)::isset
 isset(:,:,:)=.false.
 #endif
 double precision::chsum
-integer ik
+integer ik,itile
+save itile
+data itile/0/
 
 stat=1
 
@@ -814,7 +816,7 @@ do kk=zs,ze
 enddo
 #endif
 
-print *,'geotiff read_geogrid_tile ',trim(field),xs,xe,ys,ye,zs,ze
+itile=itile+1
 chsum=0
 ik=0
 do k=zs,ze
@@ -825,7 +827,8 @@ do k=zs,ze
     enddo
   enddo
 enddo
-print *,'geotiff read_geogrid_tile chsum=',chsum
+print *,'chsum',chsum,xs,xe,ys,ye
+print *,'geotiff read_geogrid_tile ',trim(field),itile,xs,xe,ys,ye,zs,ze,chsum
 
 end subroutine read_geogrid_tile
 
