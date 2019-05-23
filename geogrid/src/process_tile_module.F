@@ -1549,6 +1549,9 @@ module process_tile_module
                   do i=start_i,end_i
                      if (data_count(i,j,k) > 0.) then
                         field(i,j,k) = field(i,j,k) / data_count(i,j,k)
+                        if (i.eq.trace_i.and.j.eq.trace_j)then
+                                 write(*,finalfmt)i,j,field(i,j,k),data_count(i,j,k)
+                        endif 
                      else
                         if (.not.bitarray_test(processed_domain, i-start_i+1, j-start_j+1)) then
                            field(i,j,k) = msg_fill_val
@@ -1672,6 +1675,8 @@ module process_tile_module
       use gridinfo_module
       use misc_definitions_module
       use map_utils
+
+      use trace_fmt
     
       implicit none
     

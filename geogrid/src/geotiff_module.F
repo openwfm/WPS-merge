@@ -827,8 +827,9 @@ do k=zs,ze
     enddo
   enddo
 enddo
-print *,'chsum',chsum,xs,xe,ys,ye
-print *,'geotiff read_geogrid_tile ',trim(field),itile,xs,xe,ys,ye,zs,ze,chsum
+!print *,'chsum',chsum,xs,xe,ys,ye
+! print *,'geotiff read_geogrid_tile ',trim(field),itile,xs,xe,ys,ye,chsum
+write(*,'(a,a,i4,4i7,f17.1)')'geotiff ',field(len_trim(field)-12:len_trim(field)-4),itile,xs,xe,ys,ye,chsum
 
 end subroutine read_geogrid_tile
 
