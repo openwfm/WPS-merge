@@ -666,6 +666,10 @@ integer::ii,jj,kk
 logical,dimension(xs:xe,ys:ye,zs:ze)::isset
 isset(:,:,:)=.false.
 #endif
+double precision::chsum
+integer ik,itile
+save itile
+data itile/0/
 
 stat=1
 
@@ -811,6 +815,21 @@ do kk=zs,ze
   enddo
 enddo
 #endif
+
+itile=itile+1
+chsum=0
+ik=0
+do k=zs,ze
+  do j=ys,ye
+    do i=xs,xe
+    ik=ik+1
+    chsum = chsum + ik*array(i,j,k)
+    enddo
+  enddo
+enddo
+!print *,'chsum',chsum,xs,xe,ys,ye
+! print *,'geotiff read_geogrid_tile ',trim(field),itile,xs,xe,ys,ye,chsum
+write(*,'(a,a,i4,4i7,f17.1)')'geotiff ',field(len_trim(field)-12:len_trim(field)-4),itile,xs,xe,ys,ye,chsum
 
 end subroutine read_geogrid_tile
 

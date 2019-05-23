@@ -1377,10 +1377,16 @@ module process_tile_module
                               else
                                  field(ix, iy, k) = msg_fill_val
                               end if
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end do
                         else
                            do k=start_k,end_k
                               field(ix,iy,k) = msg_fill_val
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end do
                         end if
                      else
@@ -1391,8 +1397,14 @@ module process_tile_module
                               field(ix, iy, k) = temp
                               call bitarray_set(level_domain, ix-start_i+1, iy-start_j+1)
                               if (itype == SP_CONTINUOUS) data_count(ix, iy, k) = 1.0
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            else
                               field(ix, iy, k) = msg_fill_val
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end if
                         end do
                      end if
@@ -1549,6 +1561,9 @@ module process_tile_module
                   do i=start_i,end_i
                      if (data_count(i,j,k) > 0.) then
                         field(i,j,k) = field(i,j,k) / data_count(i,j,k)
+                        if (i.eq.trace_i.and.j.eq.trace_j)then
+                                 write(*,finalfmt)i,j,field(i,j,k),data_count(i,j,k)
+                        endif 
                      else
                         if (.not.bitarray_test(processed_domain, i-start_i+1, j-start_j+1)) then
                            field(i,j,k) = msg_fill_val
@@ -1672,6 +1687,8 @@ module process_tile_module
       use gridinfo_module
       use misc_definitions_module
       use map_utils
+
+      use trace_fmt
     
       implicit none
     

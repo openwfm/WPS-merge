@@ -10,6 +10,16 @@
 !    Routines are also provided that help the caller determine an optimized 
 !    order in which to process the model grid points.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+module trace_fmt
+   character(len=128)::tilefmt ="('geotiff added   ar(',i5,',',i5,')=',f10.3,' tile(',i6,',',i6,')=',f10.3,' n=',f2.0)"
+   character(len=128)::pointfmt="('geotiff point   ar(',i5,',',i5,')=',f10.3,' lon=',f11.5,' lat=',f11.5,' n=',f2.0)"
+   character(len=128)::finalfmt="('geotiff average ar(',i5,',',i5,')=',f10.3,' n=',f2.0)"
+   character(len=128)::smthgfmt="('geotiff smooth  ar(',i5,',',i5,')=',f10.3)"
+   integer:: trace_i = 1514
+   integer:: trace_j = 201
+end module trace_fmt
+
 module proc_point_module
 
    ! Modules
@@ -18,6 +28,8 @@ module proc_point_module
    use misc_definitions_module
    use module_debug
    use source_data_module
+   
+   use trace_fmt
  
    ! Information about which tile is in memory
    integer :: src_min_x, src_max_x, src_min_y, src_max_y, src_min_z, src_max_z, src_npts_bdr
@@ -733,6 +745,9 @@ module proc_point_module
                            if (tile_array(i,j,k) /= msgval) then 
                               dst_array(x_dest,y_dest,k) = dst_array(x_dest,y_dest,k) + tile_array(i,j,k)
                               n(x_dest,y_dest,k) = n(x_dest,y_dest,k) + 1.0
+                              if (x_dest.eq.trace_i.and.y_dest.eq.trace_j)then
+                                 write(*,tilefmt )x_dest,y_dest,dst_array(x_dest,y_dest,k),i,j,tile_array(i,j,k),n(x_dest,y_dest,k)
+                              endif
                               call bitarray_set(new_pts, x_dest-start_x+1, y_dest-start_y+1)
                            end if
                         end do
