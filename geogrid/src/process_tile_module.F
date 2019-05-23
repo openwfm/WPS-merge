@@ -1377,10 +1377,16 @@ module process_tile_module
                               else
                                  field(ix, iy, k) = msg_fill_val
                               end if
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end do
                         else
                            do k=start_k,end_k
                               field(ix,iy,k) = msg_fill_val
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end do
                         end if
                      else
@@ -1391,8 +1397,14 @@ module process_tile_module
                               field(ix, iy, k) = temp
                               call bitarray_set(level_domain, ix-start_i+1, iy-start_j+1)
                               if (itype == SP_CONTINUOUS) data_count(ix, iy, k) = 1.0
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            else
                               field(ix, iy, k) = msg_fill_val
+                              if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                                 write(*,pointfmt)ix,iy,field(ix,iy,k),current_pt%lon,current_pt%lat,data_count(ix,iy,k)
+                              endif 
                            end if
                         end do
                      end if

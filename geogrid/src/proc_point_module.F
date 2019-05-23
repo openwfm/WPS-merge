@@ -12,9 +12,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module trace_fmt
-   character(len=128)::tracefmt="('geotiff point',i2,' ar(',i5,',',i5,')=',f10.3,' ti(',i6,',',i6,')=',f10.3,' n=',f2.0)"
-   character(len=128)::finalfmt="('geotiff final',' ar(',i5,',',i5,')=',f10.3,' n=',f2.0)"
-   character(len=128)::smthgfmt="('geotiff smthg',' ar(',i5,',',i5,')=',f10.3)"
+   character(len=128)::tilefmt ="('geotiff added   ar(',i5,',',i5,')=',f10.3,' tile(',i6,',',i6,')=',f10.3,' n=',f2.0)"
+   character(len=128)::pointfmt="('geotiff point   ar(',i5,',',i5,')=',f10.3,' lon=',f11.5,' lat=',f11.5,' n=',f2.0)"
+   character(len=128)::finalfmt="('geotiff average ar(',i5,',',i5,')=',f10.3,' n=',f2.0)"
+   character(len=128)::smthgfmt="('geotiff smooth  ar(',i5,',',i5,')=',f10.3)"
    integer:: trace_i = 1514
    integer:: trace_j = 201
 end module trace_fmt
@@ -745,7 +746,7 @@ module proc_point_module
                               dst_array(x_dest,y_dest,k) = dst_array(x_dest,y_dest,k) + tile_array(i,j,k)
                               n(x_dest,y_dest,k) = n(x_dest,y_dest,k) + 1.0
                               if (x_dest.eq.trace_i.and.y_dest.eq.trace_j)then
-                                 write(*,tracefmt)1,x_dest,y_dest,dst_array(x_dest,y_dest,k),i,j,dst_array(x_dest,y_dest,k),n(x_dest,y_dest,k)
+                                 write(*,tilefmt )x_dest,y_dest,dst_array(x_dest,y_dest,k),i,j,tile_array(i,j,k),n(x_dest,y_dest,k)
                               endif
                               call bitarray_set(new_pts, x_dest-start_x+1, y_dest-start_y+1)
                            end if

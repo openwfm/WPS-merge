@@ -132,6 +132,9 @@ module smooth_module
             do ix=start_x+1,end_x-1
                do iz=start_z,end_z
                   array(ix,iy,iz) = 1.52*scratch(ix,iy,iz) - 0.26*(scratch(ix,iy-1,iz)+scratch(ix,iy+1,iz))
+                  if (ix.eq.trace_i.and.iy.eq.trace_j)then
+                          write(*,smthgfmt)ix,iy,array(ix,iy,iz)
+                  endif
                end do
             end do
          end do
