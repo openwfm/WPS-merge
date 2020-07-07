@@ -354,7 +354,7 @@ call mprintf(.true.,WARN,'PLEASE REPORT THIS BUG TO THE DEVELOPER!')
       integer, intent(in) :: nest_num
       integer, intent(out) :: ndims, min_level, max_level, istagger, istatus
       integer, intent(out) :: sr_x, sr_y
-      logical, intent(out) :: is_subgrid_var
+      logical, intent(in) :: is_subgrid_var
       character (len=128), intent(out) :: field_name, mem_order, units, description, derived_from
       character (len=128), dimension(3), intent(out) :: dim_names
 
